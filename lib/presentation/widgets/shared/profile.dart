@@ -34,7 +34,7 @@ class ProfileState extends State<Profile> {
     },
     {
       "imageUrl":
-          "https://img.freepik.com/vector-gratis/plantilla-presentacion-big-data_23-2148944034.jpg",
+          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJqUfWYnmy5eqk-NdEpgdAPLUgw2b56fQ3nQ&s",
       "title": "Machine Learning",
       "subtitle": "Aprendizaje automático",
       "likes": 150,
@@ -108,7 +108,7 @@ class ProfileState extends State<Profile> {
   ];
 
   // Lista de favoritos
-  Set<int> favorites = {1, 3, 6, 8}; // Algunos favoritos por defecto
+  Set<int> favorites = {1, 3, 6, 8};
 
   // Función para toggle favorito
   void toggleFavorite(int postId) {
@@ -197,6 +197,21 @@ class ProfileState extends State<Profile> {
                   child: const Text("Editar perfil"),
                 ),
 
+              if (!widget.isOwner)
+                ElevatedButton(
+                  onPressed: () {
+                    // context.push('/profile/edit');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Seguir"),
+                ),
+
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -250,9 +265,9 @@ class ProfileState extends State<Profile> {
                   Tab(text: "Favoritos"),
                 ],
               ),
-              // OPTIMIZADO: Mejor altura y espaciado
+
               Container(
-                height: MediaQuery.of(context).size.height * 0.65, // Más altura
+                height: MediaQuery.of(context).size.height * 0.65,
                 child: TabBarView(
                   children: [
                     // Tab de Publicaciones - ESPACIADO OPTIMIZADO
@@ -403,125 +418,128 @@ class _OptimizedPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 6,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Imagen con botón de favorito
-          Expanded(
-            flex: 7, // Más espacio para imagen
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(10),
-                  ),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
-                // Botón de favorito optimizado
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: onFavoritePressed,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        isFavorite ? Icons.star : Icons.star_border,
-                        color: isFavorite ? Colors.amber : Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () => context.push('/post/1'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 6,
+              offset: const Offset(0, 1),
             ),
-          ),
-          // Contenido de texto - MÁS COMPACTO
-          Expanded(
-            flex: 3, // Menos espacio para texto
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagen con botón de favorito
+            Expanded(
+              flex: 7, // Más espacio para imagen
+              child: Stack(
                 children: [
-                  // Títulos
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            height: 1.2,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 11,
-                            height: 1.1,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(10),
+                    ),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                     ),
                   ),
-                  // Likes en la parte inferior
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: onLikePressed,
+                  // Botón de favorito optimizado
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: onFavoritePressed,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Icon(
-                          Icons.favorite,
-                          size: 14,
-                          color: liked ? Colors.red : Colors.grey[400],
+                          isFavorite ? Icons.star : Icons.star_border,
+                          color: isFavorite ? Colors.amber : Colors.white,
+                          size: 16,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "$likes",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+            // Contenido de texto - MÁS COMPACTO
+            Expanded(
+              flex: 3, // Menos espacio para texto
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Títulos
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              height: 1.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              height: 1.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Likes en la parte inferior
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: onLikePressed,
+                          child: Icon(
+                            Icons.favorite,
+                            size: 14,
+                            color: liked ? Colors.red : Colors.grey[400],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$likes",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
