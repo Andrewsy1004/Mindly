@@ -56,16 +56,35 @@ class _SignUpViewState extends State<_SignUpView> {
 
   bool _isPasswordVisible = false;
 
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      final email = _emailController.text;
+      final password = _passwordController.text;
+
+      print('Email: $email, Password: $password');
+
+      // context.go('/home/0');
+    }
+    return;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() => setState(() {}));
+    _passwordController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
-
-    // @override
-    // void dispose() {
-    //   _emailController.dispose();
-    //   _passwordController.dispose();
-    //   super.dispose();
-    // }
 
     return Scaffold(
       body: Container(
@@ -95,6 +114,18 @@ class _SignUpViewState extends State<_SignUpView> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  final emailRegExp = RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  );
+
+                  if (!emailRegExp.hasMatch(value))
+                    return 'No tiene formato de correo';
+
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Correo electrónico',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -117,6 +148,12 @@ class _SignUpViewState extends State<_SignUpView> {
               // Campo de contraseña
               TextFormField(
                 controller: _passwordController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
@@ -150,9 +187,7 @@ class _SignUpViewState extends State<_SignUpView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: () {
-                  context.go('/home/0');
-                },
+                onPressed: _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
@@ -168,7 +203,7 @@ class _SignUpViewState extends State<_SignUpView> {
                 ),
               ),
 
-              const SizedBox(height: 15),
+              // const SizedBox(height: 15),
 
               // Enlace de registro
               TextButton(

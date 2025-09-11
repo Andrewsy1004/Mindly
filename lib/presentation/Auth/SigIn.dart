@@ -8,6 +8,7 @@ class Sigin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Registrarse'), centerTitle: true),
       body: _siginView(),
     );
@@ -28,12 +29,33 @@ class _siginViewState extends State<_siginView> {
 
   bool _isPasswordVisible = false;
 
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      final email = _emailController.text;
+      final password = _passwordController.text;
+      final fullName = _fullNameController.text;
+
+      print('Email: $email, Password: $password, Nombre: $fullName');
+
+      // context.go('/home/0');
+    }
+    return;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _fullNameController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: Container(
+      body: SingleChildScrollView(
         // margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.all(30),
         child: Form(
@@ -45,6 +67,12 @@ class _siginViewState extends State<_siginView> {
               // Nombre
               TextFormField(
                 controller: _fullNameController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Nombre completo',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -64,6 +92,18 @@ class _siginViewState extends State<_siginView> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  final emailRegExp = RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  );
+
+                  if (!emailRegExp.hasMatch(value))
+                    return 'No tiene formato de correo';
+
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Correo electrónico',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -87,6 +127,12 @@ class _siginViewState extends State<_siginView> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -119,9 +165,7 @@ class _siginViewState extends State<_siginView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: () {
-                  context.go('/home/0');
-                },
+                onPressed: _signUp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
