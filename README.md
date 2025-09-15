@@ -10,3 +10,15 @@
 - **Sistema de seguidores:** Conecta con otros usuarios y sigue sus actividades.
 - **Feed inteligente:** Descubre contenido relevante según tus intereses.
 - **Búsqueda:** Encuentra publicaciones y usuarios fácilmente.
+
+## 📱 Instalación
+
+1. 📥 Clonar el repositorio
+2. 📦 Descargar las dependencias
+```
+flutter pub get
+```
+3. ▶️ Ejecutar la aplicación
+```
+flutter run
+```
