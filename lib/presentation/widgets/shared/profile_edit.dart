@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mindly/presentation/presentation.dart';
+import 'package:mindly/shared/shared.dart';
 
 class ProfileEdit extends ConsumerWidget {
   static const name = 'profile-edit';
@@ -233,8 +234,16 @@ class ProfileEdit extends ConsumerWidget {
               ),
             ),
             TextButton(
-              onPressed: () {
-                context.go('/signup');
+              onPressed: () async {
+                try {
+                  await KeyValueStorageServices().logout();
+
+                  if (context.mounted) {
+                    context.go('/signup');
+                  }
+                } catch (e) {
+                  print("Error al cerrar sesion: $e");
+                }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text(

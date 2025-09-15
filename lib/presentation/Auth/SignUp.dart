@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/shared/shared.dart';
 
 class Signup extends StatelessWidget {
   static const name = 'signup';
@@ -61,9 +62,19 @@ class _SignUpViewState extends State<_SignUpView> {
       final email = _emailController.text;
       final password = _passwordController.text;
 
-      print('Email: $email, Password: $password');
+      try {
+        await Future.delayed(Duration(seconds: 3));
 
-      // context.go('/home/0');
+        await KeyValueStorageServices().saveToken(
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+        );
+
+        if (mounted) {
+          context.go('/home/0');
+        }
+      } catch (e) {
+        print('Error al iniciar sesión: $e');
+      }
     }
     return;
   }
