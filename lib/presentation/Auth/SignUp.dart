@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mindly/shared/shared.dart';
+import 'package:mindly/presentation/presentation.dart';
 
 class Signup extends StatelessWidget {
   static const name = 'signup';
@@ -45,35 +46,48 @@ void openDialog(BuildContext context) {
   );
 }
 
-class _SignUpView extends StatefulWidget {
+class _SignUpView extends ConsumerStatefulWidget {
   @override
-  State<_SignUpView> createState() => _SignUpViewState();
+  ConsumerState<_SignUpView> createState() => _SignUpViewState();
 }
 
-class _SignUpViewState extends State<_SignUpView> {
+class _SignUpViewState extends ConsumerState<_SignUpView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
       final email = _emailController.text;
       final password = _passwordController.text;
 
+      print('Email: $email, Password: $password');
+
       try {
-        await Future.delayed(Duration(seconds: 3));
+        // await Future.delayed(Duration(seconds: 3));
 
-        await KeyValueStorageServices().saveToken(
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
-        );
+        await ref.read(authProvider.notifier).loginUser(email, password);
 
-        if (mounted) {
-          context.go('/home/0');
+        final authState = ref.read(authProvider);
+
+        print('Estado de la autenticación: ${authState.authStatus}');
+
+        if (authState.authStatus == AuthStatus.authenticated) {
+          if (mounted) context.go('/home/0');
+        } else if (authState.errorMessage.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authState.errorMessage)));
         }
       } catch (e) {
         print('Error al iniciar sesión: $e');
+      } finally {
+        setState(() => _isLoading = false);
       }
     }
     return;
@@ -198,7 +212,7 @@ class _SignUpViewState extends State<_SignUpView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: _login,
+                onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
@@ -208,10 +222,22 @@ class _SignUpViewState extends State<_SignUpView> {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Iniciar Sesión',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
 
               // const SizedBox(height: 15),

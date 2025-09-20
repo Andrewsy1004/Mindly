@@ -213,45 +213,50 @@ class ProfileEdit extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Cerrar Sesión',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          content: const Text(
-            '¿Estás seguro de que quieres cerrar sesión?',
-            style: TextStyle(fontSize: 15),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancelar',
-                style: TextStyle(color: Colors.grey[600]),
+        return Consumer(
+          builder: (context, ref, child) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ),
-            TextButton(
-              onPressed: () async {
-                try {
-                  await KeyValueStorageServices().logout();
-
-                  if (context.mounted) {
-                    context.go('/signup');
-                  }
-                } catch (e) {
-                  print("Error al cerrar sesion: $e");
-                }
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text(
+              title: const Text(
                 'Cerrar Sesión',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
-            ),
-          ],
+              content: const Text(
+                '¿Estás seguro de que quieres cerrar sesión?',
+                style: TextStyle(fontSize: 15),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    try {
+                      // await KeyValueStorageServices().logout();
+                      await ref.read(authProvider.notifier).logout();
+
+                      if (context.mounted) {
+                        context.go('/signup');
+                      }
+                    } catch (e) {
+                      print("Error al cerrar sesion: $e");
+                    }
+                  },
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text(
+                    'Cerrar Sesión',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
