@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/shared/shared.dart';
 
 class SplashScreen extends StatefulWidget {
   static const name = 'splash-screen';
@@ -150,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
-  void _navigateToNext() {
+  void _navigateToNext() async {
     if (!mounted) return;
 
     _letterTimer?.cancel();
@@ -158,7 +159,13 @@ class _SplashScreenState extends State<SplashScreen>
       SystemUiMode.manual,
       overlays: SystemUiOverlay.values,
     );
-    context.go('/signup');
+    final isLoggedIn = await KeyValueStorageServices().isUserLoggedIn();
+
+    if (isLoggedIn) {
+      context.go('/home/0'); // Ya está logueado, va al home
+    } else {
+      context.go('/signup'); // No está logueado, va al signup
+    }
   }
 
   @override

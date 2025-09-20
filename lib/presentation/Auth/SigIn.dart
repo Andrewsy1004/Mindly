@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/presentation/providers/auth/auth_provider.dart';
 
 class Sigin extends StatelessWidget {
   static const name = '/sigin';
@@ -8,18 +10,19 @@ class Sigin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Registrarse'), centerTitle: true),
       body: _siginView(),
     );
   }
 }
 
-class _siginView extends StatefulWidget {
+class _siginView extends ConsumerStatefulWidget {
   @override
-  State<_siginView> createState() => _siginViewState();
+  _siginViewState createState() => _siginViewState();
 }
 
-class _siginViewState extends State<_siginView> {
+class _siginViewState extends ConsumerState<_siginView> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -27,13 +30,55 @@ class _siginViewState extends State<_siginView> {
   final _fullNameController = TextEditingController();
 
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  Future<void> _signUp() async {
+    if (_formKey.currentState!.validate()) {
+      final email = _emailController.text;
+      final password = _passwordController.text;
+      final fullName = _fullNameController.text;
+
+      try {
+        setState(() => _isLoading = true);
+
+        await ref
+            .read(authProvider.notifier)
+            .registerUser(email, password, fullName);
+
+        final authState = ref.read(authProvider);
+
+        if (authState.authStatus == AuthStatus.authenticated) {
+          if (mounted) context.go('/home/0');
+        } else if (authState.errorMessage.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authState.errorMessage)));
+        }
+      } catch (e) {
+        print('Error al iniciar sesión: $e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+
+      // context.go('/home/0');
+    }
+    return;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _fullNameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: Container(
+      body: SingleChildScrollView(
         // margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.all(30),
         child: Form(
@@ -45,6 +90,12 @@ class _siginViewState extends State<_siginView> {
               // Nombre
               TextFormField(
                 controller: _fullNameController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Nombre completo',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -64,6 +115,18 @@ class _siginViewState extends State<_siginView> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  final emailRegExp = RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  );
+
+                  if (!emailRegExp.hasMatch(value))
+                    return 'No tiene formato de correo';
+
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Correo electrónico',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -87,6 +150,12 @@ class _siginViewState extends State<_siginView> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: !_isPasswordVisible,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -119,9 +188,7 @@ class _siginViewState extends State<_siginView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: () {
-                  context.go('/home/0');
-                },
+                onPressed: _isLoading ? null : _signUp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
@@ -131,10 +198,22 @@ class _siginViewState extends State<_siginView> {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
-                  'Registrarse',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Registrarse',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
 
               const SizedBox(height: 15),

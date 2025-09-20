@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/presentation/presentation.dart';
 
 class Signup extends StatelessWidget {
   static const name = 'signup';
@@ -44,28 +46,66 @@ void openDialog(BuildContext context) {
   );
 }
 
-class _SignUpView extends StatefulWidget {
+class _SignUpView extends ConsumerStatefulWidget {
   @override
-  State<_SignUpView> createState() => _SignUpViewState();
+  ConsumerState<_SignUpView> createState() => _SignUpViewState();
 }
 
-class _SignUpViewState extends State<_SignUpView> {
+class _SignUpViewState extends ConsumerState<_SignUpView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
+      final email = _emailController.text;
+      final password = _passwordController.text;
+
+      try {
+        // await Future.delayed(Duration(seconds: 3));
+
+        await ref.read(authProvider.notifier).loginUser(email, password);
+
+        final authState = ref.read(authProvider);
+
+        if (authState.authStatus == AuthStatus.authenticated) {
+          if (mounted) context.go('/home/0');
+        } else if (authState.errorMessage.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authState.errorMessage)));
+        }
+      } catch (e) {
+        print('Error al iniciar sesión: $e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+    return;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() => setState(() {}));
+    _passwordController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
-
-    // @override
-    // void dispose() {
-    //   _emailController.dispose();
-    //   _passwordController.dispose();
-    //   super.dispose();
-    // }
 
     return Scaffold(
       body: Container(
@@ -95,6 +135,18 @@ class _SignUpViewState extends State<_SignUpView> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  final emailRegExp = RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  );
+
+                  if (!emailRegExp.hasMatch(value))
+                    return 'No tiene formato de correo';
+
+                  return null;
+                },
                 decoration: InputDecoration(
                   labelText: 'Correo electrónico',
                   hintStyle: TextStyle(color: Colors.grey[600]),
@@ -117,6 +169,12 @@ class _SignUpViewState extends State<_SignUpView> {
               // Campo de contraseña
               TextFormField(
                 controller: _passwordController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Campo requerido';
+                  if (value.trim().isEmpty) return 'Campo requerido';
+                  if (value.length < 6) return 'Más de 6 letras';
+                  return null;
+                },
                 obscureText: !_isPasswordVisible,
                 decoration: InputDecoration(
                   labelText: 'Contraseña',
@@ -150,9 +208,7 @@ class _SignUpViewState extends State<_SignUpView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: () {
-                  context.go('/home/0');
-                },
+                onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
@@ -162,13 +218,25 @@ class _SignUpViewState extends State<_SignUpView> {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
-                  'Iniciar Sesión',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Iniciar Sesión',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
 
-              const SizedBox(height: 15),
+              // const SizedBox(height: 15),
 
               // Enlace de registro
               TextButton(
