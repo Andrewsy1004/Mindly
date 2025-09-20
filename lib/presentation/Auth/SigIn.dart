@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/presentation/providers/auth/auth_provider.dart';
 
 class Sigin extends StatelessWidget {
   static const name = '/sigin';
@@ -15,12 +17,12 @@ class Sigin extends StatelessWidget {
   }
 }
 
-class _siginView extends StatefulWidget {
+class _siginView extends ConsumerStatefulWidget {
   @override
-  State<_siginView> createState() => _siginViewState();
+  _siginViewState createState() => _siginViewState();
 }
 
-class _siginViewState extends State<_siginView> {
+class _siginViewState extends ConsumerState<_siginView> {
   final _formKey = GlobalKey<FormState>();
 
   final _emailController = TextEditingController();
@@ -28,6 +30,7 @@ class _siginViewState extends State<_siginView> {
   final _fullNameController = TextEditingController();
 
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
@@ -35,7 +38,27 @@ class _siginViewState extends State<_siginView> {
       final password = _passwordController.text;
       final fullName = _fullNameController.text;
 
-      print('Email: $email, Password: $password, Nombre: $fullName');
+      try {
+        setState(() => _isLoading = true);
+
+        await ref
+            .read(authProvider.notifier)
+            .registerUser(email, password, fullName);
+
+        final authState = ref.read(authProvider);
+
+        if (authState.authStatus == AuthStatus.authenticated) {
+          if (mounted) context.go('/home/0');
+        } else if (authState.errorMessage.isNotEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(authState.errorMessage)));
+        }
+      } catch (e) {
+        print('Error al iniciar sesión: $e');
+      } finally {
+        setState(() => _isLoading = false);
+      }
 
       // context.go('/home/0');
     }
@@ -165,7 +188,7 @@ class _siginViewState extends State<_siginView> {
 
               // Botón de iniciar sesión
               ElevatedButton(
-                onPressed: _signUp,
+                onPressed: _isLoading ? null : _signUp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,
@@ -175,10 +198,22 @@ class _siginViewState extends State<_siginView> {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
-                  'Registrarse',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Registrarse',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
 
               const SizedBox(height: 15),

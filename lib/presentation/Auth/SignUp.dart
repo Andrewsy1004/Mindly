@@ -66,16 +66,12 @@ class _SignUpViewState extends ConsumerState<_SignUpView> {
       final email = _emailController.text;
       final password = _passwordController.text;
 
-      print('Email: $email, Password: $password');
-
       try {
         // await Future.delayed(Duration(seconds: 3));
 
         await ref.read(authProvider.notifier).loginUser(email, password);
 
         final authState = ref.read(authProvider);
-
-        print('Estado de la autenticación: ${authState.authStatus}');
 
         if (authState.authStatus == AuthStatus.authenticated) {
           if (mounted) context.go('/home/0');

@@ -69,6 +69,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     //   logout();
     // }
   }
+
+  Future<void> registerUser(
+    String email,
+    String password,
+    String fullName,
+  ) async {
+    try {
+      final user = await authRepository.register(email, password, fullName);
+      _setLoggedUser(user);
+    } on CustomError catch (e) {
+      logout(e.message);
+    }
+  }
 }
 
 enum AuthStatus { checking, authenticated, notAuthenticated }
