@@ -62,12 +62,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final token = await keyValueStorageService.getToken();
     if (token == null) return logout();
 
-    // try {
-    //   final user = await authRepository.checkAuthStatus(token);
-    //   _setLoggedUser(user);
-    // } catch (e) {
-    //   logout();
-    // }
+    try {
+      final user = await authRepository.checkAuthStatus(token);
+      _setLoggedUser(user);
+    } catch (e) {
+      logout();
+    }
   }
 
   Future<void> registerUser(
@@ -80,6 +80,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       _setLoggedUser(user);
     } on CustomError catch (e) {
       logout(e.message);
+    }
+  }
+
+  Future<void> updateUser(String token, User user) async {
+    try {
+      final userUpdated = await authRepository.updateUser(token, user);
+      _setLoggedUser(userUpdated);
+    } catch (e) {
+      throw Exception('Error al actualizar usuario, intente nuevamente !');
     }
   }
 }

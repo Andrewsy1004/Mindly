@@ -51,4 +51,39 @@ class AuthDataSourceImpl extends AuthDataSource {
       throw Exception();
     }
   }
+
+  @override
+  Future<User> checkAuthStatus(String token) async {
+    try {
+      final response = await dio.get(
+        '/usuarios/verificar-token',
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+      final user = UserMapper.userJsonToEntity(response.data);
+      return user;
+    } catch (e) {
+      throw Exception();
+    }
+  }
+
+  @override
+  Future<User> updateUser(String token, User user) async {
+    try {
+      final response = await dio.put(
+        '/usuarios/actualizar-usuario',
+        data: {
+          'correo': user.correo,
+          'nombre': user.nombre,
+          'profesion': user.profesion,
+          'biografia': user.biografia,
+          'fotoPerfil': user.fotoPerfil,
+          'uid': user.uid,
+        },
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+      return UserMapper.userJsonToEntity(response.data);
+    } catch (e) {
+      throw Exception("Error al actualizar usuario: $e");
+    }
+  }
 }
