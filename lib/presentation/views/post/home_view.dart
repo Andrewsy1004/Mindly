@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindly/presentation/presentation.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends ConsumerWidget {
   const HomeView({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final usersState = ref.watch(usersSliderProvider).users;
+    final color = Theme.of(context).colorScheme.primary;
+
+    if (usersState.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return CustomScrollView(
       slivers: [
         const SliverAppBar(
@@ -22,7 +30,7 @@ class HomeView extends StatelessWidget {
         const SliverToBoxAdapter(child: SizedBox(height: 5)),
 
         // Profiles
-        SliverToBoxAdapter(child: UserProfilesSlideshow()),
+        SliverToBoxAdapter(child: UserProfilesSlideshow(users: usersState)),
 
         const SliverToBoxAdapter(child: SizedBox(height: 5)),
 

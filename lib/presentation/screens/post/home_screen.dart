@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
     HomeView(),
     Text(''),
     Favoritesview(),
-    Profile(isOwner: true),
+    Profile("", isOwner: true),
   ];
 
   @override

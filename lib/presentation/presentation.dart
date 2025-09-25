@@ -34,3 +34,4 @@ export './delegates/search_post.dart';
 // providers
 export './providers/theme/theme_provider.dart';
 export './providers/auth/auth_provider.dart';
+export './providers/shared/slider_provider.dart';

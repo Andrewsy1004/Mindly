@@ -86,4 +86,24 @@ class AuthDataSourceImpl extends AuthDataSource {
       throw Exception("Error al actualizar usuario: $e");
     }
   }
+
+  @override
+  Future<List<User>> getAllUsersWithSimilarity(String token) async {
+    try {
+      final response = await dio.get(
+        '/usuarios/obtener-usuario-gustos-similares',
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+
+      final List usuariosList = response.data['usuarios'];
+
+      final users = usuariosList
+          .map((e) => UserMapper.sliderUserJsonToEntity(e))
+          .toList();
+
+      return users;
+    } catch (e) {
+      throw Exception("Error al obtener usuarios: $e");
+    }
+  }
 }

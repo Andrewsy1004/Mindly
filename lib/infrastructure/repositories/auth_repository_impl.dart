@@ -26,4 +26,9 @@ class AuthRepositoryImpl extends AuthRepository {
   Future<User> updateUser(String token, User user) {
     return dataSource.updateUser(token, user);
   }
+
+  @override
+  Future<List<User>> getAllUsersWithSimilarity(String token) {
+    return dataSource.getAllUsersWithSimilarity(token);
+  }
 }

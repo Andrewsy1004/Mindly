@@ -67,9 +67,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfileEdit(),
       ),
       GoRoute(
-        path: '/profileUser',
+        path: '/profileUser/:id',
         name: Profile.name,
-        builder: (context, state) => const Profile(),
+        builder: (context, state) {
+          final userId = state.pathParameters['id']!;
+          return Profile(userId);
+        },
       ),
       GoRoute(
         path: '/post/:id',

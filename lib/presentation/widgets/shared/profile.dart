@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mindly/presentation/presentation.dart';
 
-class Profile extends StatefulWidget {
+class Profile extends ConsumerStatefulWidget {
   static const name = 'profile';
   final bool isOwner;
+  final String? userId;
 
-  const Profile({super.key, this.isOwner = false});
+  const Profile(this.userId, {super.key, this.isOwner = false});
 
   @override
-  State<Profile> createState() => ProfileState();
+  ConsumerState<Profile> createState() => ProfileState();
 }
 
-class ProfileState extends State<Profile> {
+class ProfileState extends ConsumerState<Profile> {
   // Lista de posts
   final List<Map<String, dynamic>> allPosts = [
     {
@@ -138,6 +141,13 @@ class ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
+    final authState = ref.watch(authProvider);
+    final usersState = ref.watch(usersSliderProvider).users;
+
+    // Selecionar el usuario actual
+    final user = widget.isOwner
+        ? authState.user
+        : usersState.firstWhere((u) => u.uid == widget.userId);
 
     // Filtrar posts favoritos
     final favoritePosts = allPosts
@@ -164,97 +174,98 @@ class ProfileState extends State<Profile> {
           child: Column(
             children: [
               const SizedBox(height: 10),
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 45,
-                backgroundImage: NetworkImage(
-                  "https://cdn-icons-png.flaticon.com/512/2202/2202112.png",
-                ),
+                backgroundImage: NetworkImage(user!.fotoPerfil),
               ),
               const SizedBox(height: 10),
-              const Text(
-                "Ethan Carter",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                user!.nombre,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const Text("@ethan_c", style: TextStyle(color: Colors.grey)),
-              const Text(
-                "Científico de datos",
-                style: TextStyle(color: Colors.grey),
-              ),
+              // const Text("@", style: TextStyle(color: Colors.grey)),
+              Text(user!.profesion, style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 15),
 
               if (widget.isOwner)
-                ElevatedButton(
-                  onPressed: () {
-                    context.push('/profile/edit');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        context.push('/profile/edit');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text("Editar perfil"),
                     ),
-                  ),
-                  child: const Text("Editar perfil"),
+                    const SizedBox(height: 20),
+                  ],
                 ),
 
-              if (!widget.isOwner)
-                ElevatedButton(
-                  onPressed: () {
-                    // context.push('/profile/edit');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: color,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text("Seguir"),
-                ),
+              // if (!widget.isOwner)
+              //   ElevatedButton(
+              //     onPressed: () {
+              //       // context.push('/profile/edit');
+              //     },
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: color,
+              //       foregroundColor: Colors.white,
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(8),
+              //       ),
+              //     ),
+              //     child: const Text("Seguir"),
+              //   ),
+              // const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _CounterItem(
-                    label: "Publicaciones",
-                    value: "${allPosts.length}",
-                  ),
-                  const _CounterItem(label: "Seguidores", value: "100"),
-                  const _CounterItem(label: "Siguiendo", value: "250"),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Padding(
+              // const SizedBox(height: 20),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //   children: [
+              //     _CounterItem(
+              //       label: "Publicaciones",
+              //       value: "${allPosts.length}",
+              //     ),
+              //     const _CounterItem(label: "Seguidores", value: "100"),
+              //     const _CounterItem(label: "Siguiendo", value: "250"),
+              //   ],
+              // ),
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  "Soy un científico de datos apasionado por el análisis "
-                  "de datos y la creación de modelos predictivos. "
-                  "Me encanta aprender nuevas técnicas y colaborar en proyectos innovadores.",
+                  user!.biografia,
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.black87),
                 ),
               ),
               const SizedBox(height: 20),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Intereses",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Wrap(
-                spacing: 8,
-                children: [
-                  Chip(label: Text("Machine Learning")),
-                  Chip(label: Text("Big Data")),
-                  Chip(label: Text("Estadística")),
-                ],
-              ),
+              // const Padding(
+              //   padding: EdgeInsets.symmetric(horizontal: 20),
+              //   child: Align(
+              //     alignment: Alignment.centerLeft,
+              //     child: Text(
+              //       "Intereses",
+              //       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 10),
+              // const Wrap(
+              //   spacing: 8,
+              //   children: [
+              //     Chip(label: Text("Machine Learning")),
+              //     Chip(label: Text("Big Data")),
+              //     Chip(label: Text("Estadística")),
+              //   ],
+              // ),
               const SizedBox(height: 20),
               const TabBar(
                 labelColor: Colors.black,
