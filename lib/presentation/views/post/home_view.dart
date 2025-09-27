@@ -9,8 +9,9 @@ class HomeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final usersState = ref.watch(usersSliderProvider).users;
     final color = Theme.of(context).colorScheme.primary;
+    final postsState = ref.watch(postsProvider);
 
-    if (usersState.isEmpty) {
+    if (usersState.isEmpty || postsState.isLoading == true) {
       return const Center(child: CircularProgressIndicator());
     }
 

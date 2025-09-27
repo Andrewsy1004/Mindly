@@ -77,7 +77,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/post/:id',
         name: PostScreen.name,
-        builder: (context, state) => const PostScreen(),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return PostScreen(id: id);
+        },
       ),
     ],
   );

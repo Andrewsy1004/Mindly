@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mindly/presentation/presentation.dart';
 
+import '../../../domain/entities/Post.dart';
+
 class Profile extends ConsumerStatefulWidget {
   static const name = 'profile';
   final bool isOwner;
@@ -15,106 +17,11 @@ class Profile extends ConsumerStatefulWidget {
 }
 
 class ProfileState extends ConsumerState<Profile> {
-  // Lista de posts
-  final List<Map<String, dynamic>> allPosts = [
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/fondo-abstracto-tecnologia_23-2148907685.jpg",
-      "title": "Análisis de datos",
-      "subtitle": "Explorando datos",
-      "likes": 120,
-      "liked": true,
-      "id": 1,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/infografia-analisis-datos-graficos-estadisticos_52683-84209.jpg",
-      "title": "Modelos predictivos",
-      "subtitle": "Creando modelos",
-      "likes": 98,
-      "liked": false,
-      "id": 2,
-    },
-    {
-      "imageUrl":
-          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQJqUfWYnmy5eqk-NdEpgdAPLUgw2b56fQ3nQ&s",
-      "title": "Machine Learning",
-      "subtitle": "Aprendizaje automático",
-      "likes": 150,
-      "liked": true,
-      "id": 3,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/analisis-datos-abstracto_52683-84881.jpg",
-      "title": "Big Data",
-      "subtitle": "Gestión de datos",
-      "likes": 87,
-      "liked": false,
-      "id": 4,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/machine-learning-ilustracion_23-2149223680.jpg",
-      "title": "Estadística",
-      "subtitle": "Análisis avanzado",
-      "likes": 64,
-      "liked": false,
-      "id": 5,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/visualizacion-datos-estadisticos_23-2148890935.jpg",
-      "title": "Visualización",
-      "subtitle": "Datos en gráficos",
-      "likes": 132,
-      "liked": true,
-      "id": 6,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/fondo-abstracto-tecnologia_23-2148907685.jpg",
-      "title": "IA Avanzada",
-      "subtitle": "Inteligencia artificial",
-      "likes": 89,
-      "liked": false,
-      "id": 7,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/infografia-analisis-datos-graficos-estadisticos_52683-84209.jpg",
-      "title": "Deep Learning",
-      "subtitle": "Redes neuronales",
-      "likes": 156,
-      "liked": true,
-      "id": 8,
-    },
-    // Agregué más posts para mejor demostración
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/fondo-abstracto-tecnologia_23-2148907685.jpg",
-      "title": "Python Analytics",
-      "subtitle": "Programación en Python",
-      "likes": 75,
-      "liked": false,
-      "id": 9,
-    },
-    {
-      "imageUrl":
-          "https://img.freepik.com/vector-gratis/infografia-analisis-datos-graficos-estadisticos_52683-84209.jpg",
-      "title": "Data Mining",
-      "subtitle": "Minería de datos",
-      "likes": 112,
-      "liked": true,
-      "id": 10,
-    },
-  ];
+  Set<String> favorites = {};
 
-  // Lista de favoritos
-  Set<int> favorites = {1, 3, 6, 8};
-
-  // Función para toggle favorito
-  void toggleFavorite(int postId) {
+  // Función para toggle favorito (solo para owner)
+  void toggleFavorite(String postId) {
+    if (!widget.isOwner) return;
     setState(() {
       if (favorites.contains(postId)) {
         favorites.remove(postId);
@@ -124,38 +31,30 @@ class ProfileState extends ConsumerState<Profile> {
     });
   }
 
-  // Función para toggle like
-  void toggleLike(int postId) {
-    setState(() {
-      final post = allPosts.firstWhere((p) => p['id'] == postId);
-      if (post['liked']) {
-        post['likes']--;
-        post['liked'] = false;
-      } else {
-        post['likes']++;
-        post['liked'] = true;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
     final authState = ref.watch(authProvider);
     final usersState = ref.watch(usersSliderProvider).users;
+    final postsState = ref.watch(postsProvider);
 
-    // Selecionar el usuario actual
+    // Seleccionar el usuario actual
     final user = widget.isOwner
         ? authState.user
         : usersState.firstWhere((u) => u.uid == widget.userId);
 
-    // Filtrar posts favoritos
-    final favoritePosts = allPosts
-        .where((post) => favorites.contains(post['id']))
+    // Filtrar posts del usuario específico
+    final userPosts = postsState.allPosts
+        .where((post) => post.usuario.uid == user!.uid)
         .toList();
 
+    // Filtrar posts favoritos (solo para owner)
+    final favoritePosts = widget.isOwner
+        ? userPosts.where((post) => favorites.contains(post.uid)).toList()
+        : <Post>[];
+
     return DefaultTabController(
-      length: 2,
+      length: widget.isOwner ? 2 : 1, // 2 tabs para owner, 1 para otros
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
@@ -180,14 +79,13 @@ class ProfileState extends ConsumerState<Profile> {
               ),
               const SizedBox(height: 10),
               Text(
-                user!.nombre,
+                user.nombre,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              // const Text("@", style: TextStyle(color: Colors.grey)),
-              Text(user!.profesion, style: TextStyle(color: Colors.grey)),
+              Text(user.profesion, style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 15),
 
               if (widget.isOwner)
@@ -210,70 +108,24 @@ class ProfileState extends ConsumerState<Profile> {
                   ],
                 ),
 
-              // if (!widget.isOwner)
-              //   ElevatedButton(
-              //     onPressed: () {
-              //       // context.push('/profile/edit');
-              //     },
-              //     style: ElevatedButton.styleFrom(
-              //       backgroundColor: color,
-              //       foregroundColor: Colors.white,
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(8),
-              //       ),
-              //     ),
-              //     child: const Text("Seguir"),
-              //   ),
-              // const SizedBox(height: 20),
-
-              // const SizedBox(height: 20),
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              //   children: [
-              //     _CounterItem(
-              //       label: "Publicaciones",
-              //       value: "${allPosts.length}",
-              //     ),
-              //     const _CounterItem(label: "Seguidores", value: "100"),
-              //     const _CounterItem(label: "Siguiendo", value: "250"),
-              //   ],
-              // ),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  user!.biografia,
+                  user.biografia,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black87),
+                  style: const TextStyle(color: Colors.black87),
                 ),
               ),
               const SizedBox(height: 20),
-              // const Padding(
-              //   padding: EdgeInsets.symmetric(horizontal: 20),
-              //   child: Align(
-              //     alignment: Alignment.centerLeft,
-              //     child: Text(
-              //       "Intereses",
-              //       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              //     ),
-              //   ),
-              // ),
-              // const SizedBox(height: 10),
-              // const Wrap(
-              //   spacing: 8,
-              //   children: [
-              //     Chip(label: Text("Machine Learning")),
-              //     Chip(label: Text("Big Data")),
-              //     Chip(label: Text("Estadística")),
-              //   ],
-              // ),
-              const SizedBox(height: 20),
-              const TabBar(
+
+              // TabBar condicional
+              TabBar(
                 labelColor: Colors.black,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.black,
                 tabs: [
-                  Tab(text: "Publicaciones"),
-                  Tab(text: "Favoritos"),
+                  const Tab(text: "Publicaciones"),
+                  if (widget.isOwner) const Tab(text: "Favoritos"),
                 ],
               ),
 
@@ -281,96 +133,10 @@ class ProfileState extends ConsumerState<Profile> {
                 height: MediaQuery.of(context).size.height * 0.65,
                 child: TabBarView(
                   children: [
-                    // Tab de Publicaciones - ESPACIADO OPTIMIZADO
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      child: GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 4, // REDUCIDO de 8 a 4
-                              crossAxisSpacing: 6, // REDUCIDO de 8 a 6
-                              childAspectRatio: 0.85, // MEJORADO de 0.75 a 0.85
-                            ),
-                        itemCount: allPosts.length,
-                        itemBuilder: (context, index) {
-                          final post = allPosts[index];
-                          return _OptimizedPostCard(
-                            imageUrl: post["imageUrl"],
-                            title: post["title"],
-                            subtitle: post["subtitle"],
-                            likes: post["likes"],
-                            liked: post["liked"],
-                            isFavorite: favorites.contains(post["id"]),
-                            onLikePressed: () => toggleLike(post["id"]),
-                            onFavoritePressed: () => toggleFavorite(post["id"]),
-                          );
-                        },
-                      ),
-                    ),
-                    // Tab de Favoritos
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      child: favoritePosts.isEmpty
-                          ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.favorite_border,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    "No tienes favoritos aún",
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    "Toca el ⭐ en tus posts favoritos",
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 4,
-                                    crossAxisSpacing: 6,
-                                    childAspectRatio: 0.85,
-                                  ),
-                              itemCount: favoritePosts.length,
-                              itemBuilder: (context, index) {
-                                final post = favoritePosts[index];
-                                return _OptimizedPostCard(
-                                  imageUrl: post["imageUrl"],
-                                  title: post["title"],
-                                  subtitle: post["subtitle"],
-                                  likes: post["likes"],
-                                  liked: post["liked"],
-                                  isFavorite: true,
-                                  onLikePressed: () => toggleLike(post["id"]),
-                                  onFavoritePressed: () =>
-                                      toggleFavorite(post["id"]),
-                                );
-                              },
-                            ),
-                    ),
+                    // Tab de Publicaciones
+                    _buildPostsGrid(userPosts),
+                    // Tab de Favoritos (solo si es owner)
+                    if (widget.isOwner) _buildFavoritesGrid(favoritePosts),
                   ],
                 ),
               ),
@@ -380,57 +146,115 @@ class ProfileState extends ConsumerState<Profile> {
       ),
     );
   }
-}
 
-class _CounterItem extends StatelessWidget {
-  final String label;
-  final String value;
-  const _CounterItem({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
+  Widget _buildPostsGrid(List<Post> posts) {
+    if (posts.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.post_add, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "No hay publicaciones",
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Aún no se han compartido publicaciones",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
         ),
-        Text(label, style: const TextStyle(color: Colors.grey)),
-      ],
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 6,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: posts.length,
+        itemBuilder: (context, index) {
+          final post = posts[index];
+          return _OptimizedPostCard(
+            post: post,
+            isFavorite: favorites.contains(post.uid),
+            showFavoriteButton: widget.isOwner,
+            onFavoritePressed: () => toggleFavorite(post.uid),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFavoritesGrid(List<Post> favoritePosts) {
+    if (favoritePosts.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "No tienes favoritos aún",
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Toca el ⭐ en tus posts favoritos",
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 6,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: favoritePosts.length,
+        itemBuilder: (context, index) {
+          final post = favoritePosts[index];
+          return _OptimizedPostCard(
+            post: post,
+            isFavorite: true,
+            showFavoriteButton: true,
+            onFavoritePressed: () => toggleFavorite(post.uid),
+          );
+        },
+      ),
     );
   }
 }
 
-// NUEVA: Card optimizada para menor espacio y mejor diseño
 class _OptimizedPostCard extends StatelessWidget {
-  final String imageUrl;
-  final String title;
-  final String subtitle;
-  final int likes;
-  final bool liked;
+  final Post post;
   final bool isFavorite;
-  final VoidCallback onLikePressed;
+  final bool showFavoriteButton;
   final VoidCallback onFavoritePressed;
 
   const _OptimizedPostCard({
-    required this.imageUrl,
-    required this.title,
-    required this.subtitle,
-    required this.likes,
-    this.liked = false,
+    required this.post,
     this.isFavorite = false,
-    required this.onLikePressed,
+    this.showFavoriteButton = true,
     required this.onFavoritePressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push('/post/1'),
+      onTap: () => context.push('/post/${post.uid}'),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -448,7 +272,7 @@ class _OptimizedPostCard extends StatelessWidget {
           children: [
             // Imagen con botón de favorito
             Expanded(
-              flex: 7, // Más espacio para imagen
+              flex: 7,
               child: Stack(
                 children: [
                   ClipRRect(
@@ -456,38 +280,48 @@ class _OptimizedPostCard extends StatelessWidget {
                       top: Radius.circular(10),
                     ),
                     child: Image.network(
-                      imageUrl,
+                      post.imagen,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  // Botón de favorito optimizado
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: onFavoritePressed,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(
-                          isFavorite ? Icons.star : Icons.star_border,
-                          color: isFavorite ? Colors.amber : Colors.white,
-                          size: 16,
+                  // Botón de favorito solo para owner
+                  if (showFavoriteButton)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: GestureDetector(
+                        onTap: onFavoritePressed,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(
+                            isFavorite ? Icons.star : Icons.star_border,
+                            color: isFavorite ? Colors.amber : Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
-            // Contenido de texto - MÁS COMPACTO
+            // Contenido de texto
             Expanded(
-              flex: 3, // Menos espacio para texto
+              flex: 3,
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Column(
@@ -500,7 +334,7 @@ class _OptimizedPostCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            title,
+                            post.titulo,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
@@ -511,7 +345,7 @@ class _OptimizedPostCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            subtitle,
+                            post.descripcion,
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 11,
@@ -523,27 +357,26 @@ class _OptimizedPostCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Likes en la parte inferior
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: onLikePressed,
-                          child: Icon(
-                            Icons.favorite,
-                            size: 14,
-                            color: liked ? Colors.red : Colors.grey[400],
-                          ),
+                    // Categoría en la parte inferior
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        post.categoria,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          "$likes",
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
