@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mindly/presentation/presentation.dart';
 
 class PostScreen extends ConsumerWidget {
@@ -41,33 +42,60 @@ class PostScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Título y autor
-            Text(
-              post.titulo,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            GestureDetector(
-              onTap: () => context.push('/profileUser/${post.usuario.uid}'),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundImage: NetworkImage(post.usuario.fotoPerfil),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título
+                Text(
+                  post.titulo,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    post.usuario.nombre,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
+                ),
+
+                const SizedBox(height: 6),
+
+                // Autor + Fecha en la misma fila
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () =>
+                          context.push('/profileUser/${post.usuario.uid}'),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundImage: NetworkImage(
+                              post.usuario.fotoPerfil,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            post.usuario.nombre,
+                            style: const TextStyle(
+                              fontSize: 14, // un poco más grande
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 12),
+                    Text(
+                      DateFormat(
+                        "dd/MM/yyyy · HH:mm",
+                      ).format(DateTime.parse(post.createdAt)),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+              ],
             ),
 
-            const SizedBox(height: 12),
+            // const SizedBox(height: 12),
 
             // Chips
             Wrap(

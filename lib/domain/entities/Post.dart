@@ -9,6 +9,7 @@ class Post {
   final List<String> tags;
   final User usuario;
   final bool estado = true;
+  final String createdAt;
 
   Post({
     required this.uid,
@@ -18,5 +19,6 @@ class Post {
     required this.categoria,
     required this.tags,
     required this.usuario,
+    required this.createdAt,
   });
 }

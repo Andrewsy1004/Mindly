@@ -21,6 +21,7 @@ class PostMapper {
         biografia: usuarioJson['biografia'] ?? '',
         token: usuarioJson['token'] ?? '',
       ),
+      createdAt: json['createdAt'] ?? '',
     );
   }
 }
