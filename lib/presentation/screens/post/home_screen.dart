@@ -11,7 +11,8 @@ class HomeScreen extends StatelessWidget {
 
   final viewRoutes = const <Widget>[
     HomeView(),
-    Text(''),
+    // Text(''),
+    Nuevopostview(),
     Favoritesview(),
     Profile("", isOwner: true),
   ];

@@ -48,12 +48,48 @@ class PostsNotifier extends StateNotifier<PostsState> {
     }
   }
 
-  Future<void> AgregarFavorito(Post post) async {
+  Future<void> agregarFavorito(Post post) async {
     try {
       state = state.copyWith(isLoading: true);
 
       // await postsRepository.addFavoritePost(post);
       state = state.copyWith(isLoading: false, errorMessage: '');
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString(), isLoading: false);
+    }
+  }
+
+  // Eliminar Post
+  Future<void> eliminarPost(String postId) async {
+    final token = await keyValueStorageService.getToken();
+
+    try {
+      state = state.copyWith(isLoading: true);
+
+      // Llamada al repositorio para eliminar el post en el backend
+      await postsRepository.deletePost(token!, postId);
+
+      // Remover el post de los providers
+
+      final updatedPosts = state.allPosts
+          .where((post) => post.uid != postId)
+          .toList();
+
+      final updatedRecommended = state.recommendedPosts
+          .where((post) => post.uid != postId)
+          .toList();
+
+      final updatedFavorites = state.favoritePosts
+          .where((post) => post.uid != postId)
+          .toList();
+
+      state = state.copyWith(
+        allPosts: updatedPosts,
+        recommendedPosts: updatedRecommended,
+        favoritePosts: updatedFavorites,
+        isLoading: false,
+        errorMessage: '',
+      );
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString(), isLoading: false);
     }

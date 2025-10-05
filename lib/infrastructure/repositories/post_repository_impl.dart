@@ -16,4 +16,9 @@ class PostRepositoryImpl extends PostRepository {
   Future<List<Post>> getRecommendedPosts(String token) {
     return datasource.getRecommendedPosts(token);
   }
+
+  @override
+  Future<void> deletePost(String token, String postId) {
+    return datasource.deletePost(token, postId);
+  }
 }

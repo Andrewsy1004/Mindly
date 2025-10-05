@@ -9,16 +9,52 @@ class PostScreen extends ConsumerWidget {
   final String id;
   const PostScreen({super.key, required this.id});
 
+  Future<void> deletePostById(WidgetRef ref, BuildContext context) async {
+    try {
+      await ref.read(postsProvider.notifier).eliminarPost(id);
+
+      // Verificar  si el widget todavía está en el árbol de widgets antes de usar
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post eliminado correctamente'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al eliminar el post: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final postsState = ref.watch(postsProvider);
     final recommendedPosts = postsState.allPosts;
     final authState = ref.read(authProvider).user;
 
-    // Buscar el post que coincide con el id
-    final post = recommendedPosts.firstWhere((p) => p.uid == id);
+    // Buscar el post en la lista
+    final post = recommendedPosts.where((p) => p.uid == id).firstOrNull;
 
-    // Verificar si el post fue ceado por el usuario actual
+    // Si el post no existe, redirigir automáticamente
+    if (post == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.pop();
+        }
+      });
+
+      // Mostrar loading mientras redirige
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Verificar si el post pertenece al usuario
     final isOwner = post.usuario.uid == authState!.uid;
 
     return Scaffold(
@@ -28,9 +64,9 @@ class PostScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(
               Icons.favorite_border,
-            ), // o Icons.favorite si ya está marcado
+            ), //Todo: Agregar la funcionalidad de marcar como favorito
             onPressed: () {
-              // aquí manejas el like
+              //Todo : Agregar la funcionalidad de marcar como favorito
             },
           ),
         ],
@@ -113,7 +149,7 @@ class PostScreen extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                     ),
-                    onPressed: () {},
+                    onPressed: () => deletePostById(ref, context),
                     child: const Text(
                       "Eliminar",
                       style: TextStyle(color: Colors.white),

@@ -461,6 +461,10 @@ class _ProfileEditState extends ConsumerState<ProfileEdit> {
 
       await authNotifier.updateUser(authState.user!.token, updatedUser);
 
+      // Recargar posts y usuarios recomendados basados en el perfil actualizado
+      ref.invalidate(usersSliderProvider);
+      ref.invalidate(postsProvider);
+
       // Mostrar mensaje de éxito
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

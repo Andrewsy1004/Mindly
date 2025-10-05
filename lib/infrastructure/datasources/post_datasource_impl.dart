@@ -44,4 +44,18 @@ class PostDatasourceImpl extends PostDatasource {
       throw Exception();
     }
   }
+
+  @override
+  Future<void> deletePost(String token, String postId) async {
+    try {
+      final response = await dio.delete(
+        '/posts/eliminar-post/$postId',
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+
+      return response.data;
+    } catch (e) {
+      throw Exception('Error al eliminar post: $e');
+    }
+  }
 }
