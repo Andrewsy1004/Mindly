@@ -62,12 +62,23 @@ class PostScreen extends ConsumerWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.favorite_border,
-            ), //Todo: Agregar la funcionalidad de marcar como favorito
-            onPressed: () {
-              //Todo : Agregar la funcionalidad de marcar como favorito
-            },
+            icon: Icon(
+              ref
+                      .watch(postsProvider)
+                      .favoritePosts
+                      .any((p) => p.uid == post.uid)
+                  ? Icons.favorite
+                  : Icons.favorite_border,
+              color:
+                  ref
+                      .watch(postsProvider)
+                      .favoritePosts
+                      .any((p) => p.uid == post.uid)
+                  ? Colors.red
+                  : Colors.grey,
+            ),
+            onPressed: () =>
+                ref.read(postsProvider.notifier).toggleFavorite(post),
           ),
         ],
       ),

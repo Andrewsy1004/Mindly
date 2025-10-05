@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:mindly/domain/domain.dart';
 import 'package:mindly/infrastructure/infrastructure.dart';
 import 'package:mindly/shared/shared.dart';
@@ -27,9 +26,9 @@ class PostsNotifier extends StateNotifier<PostsState> {
     loadData();
   }
 
+  /// Cargar posts iniciales
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true);
-
     final token = await keyValueStorageService.getToken();
 
     try {
@@ -48,37 +47,37 @@ class PostsNotifier extends StateNotifier<PostsState> {
     }
   }
 
-  Future<void> agregarFavorito(Post post) async {
-    try {
-      state = state.copyWith(isLoading: true);
+  Future<void> toggleFavorite(Post post) async {
+    final isFavorited = state.favoritePosts.any((p) => p.uid == post.uid);
 
-      // await postsRepository.addFavoritePost(post);
-      state = state.copyWith(isLoading: false, errorMessage: '');
-    } catch (e) {
-      state = state.copyWith(errorMessage: e.toString(), isLoading: false);
+    if (isFavorited) {
+      state = state.copyWith(
+        favoritePosts: state.favoritePosts
+            .where((p) => p.uid != post.uid)
+            .toList(),
+      );
+    } else {
+      state = state.copyWith(favoritePosts: [...state.favoritePosts, post]);
     }
+
+    //Todo: Base de datos
   }
 
-  // Eliminar Post
+  /// Eliminar Post
   Future<void> eliminarPost(String postId) async {
     final token = await keyValueStorageService.getToken();
 
     try {
       state = state.copyWith(isLoading: true);
 
-      // Llamada al repositorio para eliminar el post en el backend
       await postsRepository.deletePost(token!, postId);
-
-      // Remover el post de los providers
 
       final updatedPosts = state.allPosts
           .where((post) => post.uid != postId)
           .toList();
-
       final updatedRecommended = state.recommendedPosts
           .where((post) => post.uid != postId)
           .toList();
-
       final updatedFavorites = state.favoritePosts
           .where((post) => post.uid != postId)
           .toList();

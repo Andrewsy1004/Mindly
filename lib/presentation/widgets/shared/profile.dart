@@ -54,7 +54,8 @@ class ProfileState extends ConsumerState<Profile> {
         : <Post>[];
 
     return DefaultTabController(
-      length: widget.isOwner ? 2 : 1, // 2 tabs para owner, 1 para otros
+      // length: widget.isOwner ? 2 : 1, // 2 tabs para owner, 1 para otros
+      length: 1,
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
@@ -125,7 +126,7 @@ class ProfileState extends ConsumerState<Profile> {
                 indicatorColor: Colors.black,
                 tabs: [
                   const Tab(text: "Publicaciones"),
-                  if (widget.isOwner) const Tab(text: "Favoritos"),
+                  // if (widget.isOwner) const Tab(text: "Favoritos"),
                 ],
               ),
 
@@ -136,7 +137,7 @@ class ProfileState extends ConsumerState<Profile> {
                     // Tab de Publicaciones
                     _buildPostsGrid(userPosts),
                     // Tab de Favoritos (solo si es owner)
-                    if (widget.isOwner) _buildFavoritesGrid(favoritePosts),
+                    // if (widget.isOwner) _buildFavoritesGrid(favoritePosts),
                   ],
                 ),
               ),
@@ -257,7 +258,7 @@ class _OptimizedPostCard extends StatelessWidget {
       onTap: () => context.push('/post/${post.uid}'),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color.fromRGBO(255, 255, 255, 1),
           borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
@@ -296,26 +297,26 @@ class _OptimizedPostCard extends StatelessWidget {
                     ),
                   ),
                   // Botón de favorito solo para owner
-                  if (showFavoriteButton)
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: GestureDetector(
-                        onTap: onFavoritePressed,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            isFavorite ? Icons.star : Icons.star_border,
-                            color: isFavorite ? Colors.amber : Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // if (showFavoriteButton)
+                  //   Positioned(
+                  //     top: 6,
+                  //     right: 6,
+                  //     child: GestureDetector(
+                  //       onTap: onFavoritePressed,
+                  //       child: Container(
+                  //         padding: const EdgeInsets.all(6),
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.black.withOpacity(0.6),
+                  //           borderRadius: BorderRadius.circular(16),
+                  //         ),
+                  //         child: Icon(
+                  //           isFavorite ? Icons.star : Icons.star_border,
+                  //           color: isFavorite ? Colors.amber : Colors.white,
+                  //           size: 16,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
             ),
