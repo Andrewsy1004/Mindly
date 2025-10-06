@@ -24,6 +24,7 @@ export './screens/post/post_screen.dart';
 // Views
 export './views/post/home_view.dart';
 export './views/post/FavoritesView.dart';
+export './views/post/NuevoPostView.dart';
 
 // modals
 export './modals/newPost.dart';
@@ -34,3 +35,6 @@ export './delegates/search_post.dart';
 // providers
 export './providers/theme/theme_provider.dart';
 export './providers/auth/auth_provider.dart';
+export './providers/shared/slider_provider.dart';
+export 'providers/shared/post_providet.dart';
+export 'providers/shared/coment_provider.dart';

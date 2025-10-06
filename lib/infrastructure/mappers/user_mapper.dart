@@ -11,4 +11,15 @@ class UserMapper {
     uid: json['usuario']['uid'] ?? '',
     token: json['token'] ?? '',
   );
+
+  static User sliderUserJsonToEntity(Map<String, dynamic> json) => User(
+    uid: json['id'] ?? '',
+    nombre: json['nombre'] ?? '',
+    correo: json['correo'] ?? '',
+    profesion: json['profesion'] ?? '',
+    fotoPerfil: json['fotoPerfil'] ?? '',
+    roles: <String>[],
+    biografia: json['biografia'] ?? '',
+    token: '',
+  );
 }

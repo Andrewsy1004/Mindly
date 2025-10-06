@@ -1,149 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class PostScrollVerticalSliver extends StatefulWidget {
+import 'package:mindly/presentation/presentation.dart';
+import 'package:mindly/domain/domain.dart';
+
+class PostScrollVerticalSliver extends ConsumerStatefulWidget {
   const PostScrollVerticalSliver({super.key});
 
   @override
-  State<PostScrollVerticalSliver> createState() =>
+  ConsumerState<PostScrollVerticalSliver> createState() =>
       _PostScrollVerticalSliverState();
 }
 
-class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
-  final List<Map<String, dynamic>> _posts = [];
-  bool _isLoading = false;
-  bool _hasMore = true;
-  int _currentPage = 0;
-  bool _isLoadingMore = false;
-
+class _PostScrollVerticalSliverState
+    extends ConsumerState<PostScrollVerticalSliver> {
   @override
   void initState() {
     super.initState();
-    _loadInitialPosts();
   }
 
-  Future<void> _loadInitialPosts() async {
-    if (_isLoading) return;
-
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final newPosts = _generatePosts(0, 10);
-    if (mounted) {
-      setState(() {
-        _posts.addAll(newPosts);
-        _isLoading = false;
-        _currentPage = 1;
-      });
-    }
-  }
-
-  Future<void> _loadMorePosts() async {
-    if (_isLoadingMore || !_hasMore || _isLoading) return;
-
-    setState(() => _isLoadingMore = true);
-    await Future.delayed(const Duration(seconds: 2));
-
-    final newPosts = _generatePosts(_currentPage, 10);
-
-    if (mounted) {
-      setState(() {
-        _posts.addAll(newPosts);
-        _isLoadingMore = false;
-        _currentPage++;
-
-        if (_currentPage >= 3) {
-          _hasMore = false;
-        }
-      });
-    }
-  }
-
-  List<Map<String, dynamic>> _generatePosts(int page, int count) {
-    final categories = [
-      'Tecnología',
-      'Viajes',
-      'Cocina',
-      'Desarrollo personal',
-      'Salud',
-      'Deportes',
-    ];
-    final authors = [
-      'Amelia Harper',
-      'Lucas Bennett',
-      'Chloe Foster',
-      'Owen Carter',
-      'Emma Wilson',
-      'Noah Thompson',
-    ];
-    final dates = [
-      '20 de mayo',
-      '18 de mayo',
-      '15 de mayo',
-      '12 de mayo',
-      '10 de mayo',
-      '8 de mayo',
-    ];
-
-    return List.generate(count, (index) {
-      final globalIndex = page * count + index;
-      return {
-        'category': categories[globalIndex % categories.length],
-        'title': _generatePostTitle(globalIndex % categories.length),
-        'author': authors[globalIndex % authors.length],
-        'date': dates[globalIndex % dates.length],
-        'color': _getCategoryColor(globalIndex % categories.length),
-      };
-    });
-  }
-
-  String _generatePostTitle(int categoryIndex) {
-    final titles = [
-      'El futuro de la IA en la atención médica',
-      'Explorando las maravillas ocultas de Islandia',
-      'Recetas de verano refrescantes y fáciles',
-      'Construyendo hábitos saludables para una vida equilibrada',
-      'Los beneficios del ejercicio regular para la salud mental',
-      'Tendencias actuales en el mundo del fitness',
-    ];
-    return titles[categoryIndex];
-  }
-
-  Color _getCategoryColor(int index) {
-    final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-    ];
-    return colors[index];
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Tecnología':
-        return Icons.computer;
-      case 'Viajes':
-        return Icons.flight_takeoff;
-      case 'Cocina':
-        return Icons.restaurant;
-      case 'Desarrollo personal':
-        return Icons.psychology;
-      case 'Salud':
-        return Icons.favorite;
-      case 'Deportes':
-        return Icons.fitness_center;
+  Color _getCategoryColor(String categoria) {
+    switch (categoria.toLowerCase()) {
+      case 'tecnología':
+      case 'tecnologia':
+        return Colors.blue;
+      case 'viajes':
+        return Colors.green;
+      case 'cocina':
+        return Colors.orange;
+      case 'desarrollo personal':
+        return Colors.purple;
+      case 'salud':
+        return Colors.red;
+      case 'deportes':
+        return Colors.teal;
       default:
-        return Icons.article;
+        return Colors.blueGrey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _posts.isEmpty) {
+    final postsState = ref.watch(postsProvider);
+    final recommendedPosts = postsState.recommendedPosts;
+
+    // Si está cargando y no hay posts
+    if (postsState.isLoading && recommendedPosts.isEmpty) {
       return const SliverToBoxAdapter(
         child: Center(
           child: Padding(
@@ -154,45 +58,61 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
       );
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        // Título "Para ti" como primer elemento
-        if (index == 0) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'Para ti',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+    // Si no hay posts
+    if (recommendedPosts.isEmpty && !postsState.isLoading) {
+      return const SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Column(
+              children: [
+                Icon(Icons.article_outlined, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No hay posts disponibles',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+              ],
             ),
-          );
-        }
+          ),
+        ),
+      );
+    }
 
-        final postIndex = index - 1; // Restar 1 por el título
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          // Título "Para ti" como primer elemento
+          if (index == 0) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'Para ti',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            );
+          }
 
-        // Si llegamos cerca del final, cargar más posts
-        if (postIndex == _posts.length - 2 && _hasMore && !_isLoadingMore) {
-          _loadMorePosts();
-        }
+          final postIndex = index - 1;
 
-        // Mostrar posts
-        if (postIndex < _posts.length) {
-          return _buildPostItem(_posts[postIndex]);
-        }
+          // Mostrar posts disponibles
+          if (postIndex < recommendedPosts.length) {
+            return _buildPostItem(recommendedPosts[postIndex]);
+          }
 
-        // Mostrar loader al final
-        if (postIndex == _posts.length) {
-          return _buildLoader();
-        }
-
-        return null;
-      }, childCount: _posts.length + 1 + (_hasMore || _isLoadingMore ? 1 : 0)),
+          return null;
+        },
+        childCount: recommendedPosts.length + 1, // +1 por el título
+      ),
     );
   }
 
-  Widget _buildPostItem(Map<String, dynamic> post) {
+  Widget _buildPostItem(Post post) {
+    final categoryColor = _getCategoryColor(post.categoria);
+
     return GestureDetector(
       onTap: () {
-        context.push('/post/1');
+        context.push('/post/${post.uid}');
       },
       child: FadeInUp(
         duration: const Duration(milliseconds: 500),
@@ -220,39 +140,31 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
-                  color: post['color'].withOpacity(0.1),
+                  color: categoryColor.withOpacity(0.1),
                 ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
-                  child: Stack(
-                    children: [
-                      // Fondo con color de categoría
-                      Container(
-                        width: double.infinity,
-                        height: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              post['color'].withOpacity(0.3),
-                              post['color'].withOpacity(0.1),
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Icono representativo basado en la categoría
-                      Center(
-                        child: Icon(
-                          _getCategoryIcon(post['category']),
-                          size: 60,
-                          color: post['color'].withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: post.imagen.isNotEmpty
+                      ? Image.network(
+                          post.imagen,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildImagePlaceholder(
+                              post.categoria,
+                              categoryColor,
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildImagePlaceholder(
+                              post.categoria,
+                              categoryColor,
+                            );
+                          },
+                        )
+                      : _buildImagePlaceholder(post.categoria, categoryColor),
                 ),
               ),
 
@@ -264,9 +176,9 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
                   children: [
                     // Categoría
                     Text(
-                      post['category'],
+                      post.categoria,
                       style: TextStyle(
-                        color: post['color'],
+                        color: categoryColor,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -276,7 +188,7 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
 
                     // Título
                     Text(
-                      post['title'],
+                      post.titulo,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -284,36 +196,72 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
                       ),
                     ),
 
+                    const SizedBox(height: 8),
+
+                    // Descripción
+                    Text(
+                      post.descripcion,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
                     const SizedBox(height: 12),
 
-                    // Autor y fecha
+                    // Autor y tags
                     Row(
                       children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 16,
-                          color: Colors.grey,
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: post.usuario.fotoPerfil.isNotEmpty
+                              ? NetworkImage(post.usuario.fotoPerfil)
+                              : null,
+                          child: post.usuario.fotoPerfil.isEmpty
+                              ? const Icon(Icons.person, size: 14)
+                              : null,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Por ${post['author']}',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        const Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          post['date'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Por ${post.usuario.nombre}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              if (post.tags.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 4,
+                                  children: post.tags.take(3).map((tag) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: categoryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '#$tag',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: categoryColor,
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],
@@ -328,42 +276,21 @@ class _PostScrollVerticalSliverState extends State<PostScrollVerticalSliver> {
     );
   }
 
-  Widget _buildLoader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: Center(
-        child: _isLoadingMore
-            ? Column(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Cargando más posts...',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                ],
-              )
-            : !_hasMore
-            ? Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.grey[600], size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'No hay más posts para mostrar',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  ],
-                ),
-              )
-            : const SizedBox.shrink(),
-      ),
+  Widget _buildImagePlaceholder(String categoria, Color color) {
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withOpacity(0.3), color.withOpacity(0.1)],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

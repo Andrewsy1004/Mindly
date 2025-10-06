@@ -7,4 +7,7 @@ class Environment {
 
   static String apiUrl =
       dotenv.env['API_URL'] ?? 'No está configurado el API_URL';
+
+  static String apiCloudinary =
+      dotenv.env['API_CLOUDINARY'] ?? 'No está configurado el API_CLOUDINARY';
 }

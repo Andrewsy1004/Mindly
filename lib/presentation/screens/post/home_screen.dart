@@ -11,9 +11,9 @@ class HomeScreen extends StatelessWidget {
 
   final viewRoutes = const <Widget>[
     HomeView(),
-    Text(''),
+    Nuevopostview(),
     Favoritesview(),
-    Profile(isOwner: true),
+    Profile("", isOwner: true),
   ];
 
   @override

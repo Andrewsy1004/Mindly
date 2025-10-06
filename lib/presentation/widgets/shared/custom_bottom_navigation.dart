@@ -23,7 +23,8 @@ class CustomBottomNavigation extends StatelessWidget {
         context.go('/home/0');
         break;
       case 1:
-        mostrarModalNuevaPublicacion(context);
+        context.go('/home/1');
+        // mostrarModalNuevaPublicacion(context);
         break;
       case 2:
         context.go('/home/2');

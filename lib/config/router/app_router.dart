@@ -67,14 +67,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfileEdit(),
       ),
       GoRoute(
-        path: '/profileUser',
+        path: '/profileUser/:id',
         name: Profile.name,
-        builder: (context, state) => const Profile(),
+        builder: (context, state) {
+          final userId = state.pathParameters['id']!;
+          return Profile(userId);
+        },
       ),
       GoRoute(
         path: '/post/:id',
         name: PostScreen.name,
-        builder: (context, state) => const PostScreen(),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return PostScreen(id: id);
+        },
+      ),
+
+      // Actualizar Post
+      GoRoute(
+        path: '/actualizar-post/:postId',
+        builder: (context, state) =>
+            Nuevopostview(postId: state.pathParameters['postId']),
       ),
     ],
   );
