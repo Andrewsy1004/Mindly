@@ -111,6 +111,39 @@ class PostsNotifier extends StateNotifier<PostsState> {
       state = state.copyWith(errorMessage: e.toString(), isLoading: false);
     }
   }
+
+  // Actualizar Post
+  Future<void> actualizarPost(Post post) async {
+    final token = await keyValueStorageService.getToken();
+    try {
+      state = state.copyWith(isLoading: true);
+      await postsRepository.updatePost(token!, post);
+      state = state.copyWith(isLoading: false, errorMessage: '');
+
+      // Actualizar post en la lista de posts
+      final updatedPosts = state.allPosts
+          .map((p) => p.uid == post.uid ? post : p)
+          .toList();
+      state = state.copyWith(allPosts: updatedPosts);
+
+      // Actualizar post en la lista de posts recomendados
+      final updatedRecommendedPosts = state.recommendedPosts
+          .map((p) => p.uid == post.uid ? post : p)
+          .toList();
+      state = state.copyWith(recommendedPosts: updatedRecommendedPosts);
+
+      // Actualizar post en la lista de posts favoritos
+      final updatedFavoritePosts = state.favoritePosts
+          .map((p) => p.uid == post.uid ? post : p)
+          .toList();
+      state = state.copyWith(favoritePosts: updatedFavoritePosts);
+
+      //Cargar Todos los posts
+      loadData();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString(), isLoading: false);
+    }
+  }
 }
 
 /// State

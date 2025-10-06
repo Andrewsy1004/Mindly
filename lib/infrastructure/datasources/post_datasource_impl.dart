@@ -79,4 +79,26 @@ class PostDatasourceImpl extends PostDatasource {
       throw Exception('Error al crear post: $e');
     }
   }
+
+  @override
+  Future<void> updatePost(String token, Post post) {
+    try {
+      final response = dio.put(
+        '/posts/actualizar-post',
+        data: {
+          'titulo': post.titulo,
+          'descripcion': post.descripcion,
+          'imagen': post.imagen,
+          'categoria': post.categoria,
+          'tags': post.tags,
+          'id': post.uid,
+        },
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+
+      return response;
+    } catch (e) {
+      throw Exception('Error al actualizar post: $e');
+    }
+  }
 }

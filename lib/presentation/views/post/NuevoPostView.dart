@@ -229,16 +229,7 @@ class _NuevaPublicacionScreenState extends ConsumerState<Nuevopostview> {
         imagen: imageUrl,
         categoria: _categoriaController.text,
         tags: _tags,
-        usuario: User(
-          nombre: '',
-          correo: '',
-          roles: [],
-          profesion: '',
-          biografia: '',
-          fotoPerfil: '',
-          uid: '',
-          token: '',
-        ),
+        usuario: ref.read(authProvider).user!,
         createdAt: '',
       );
 
@@ -263,6 +254,109 @@ class _NuevaPublicacionScreenState extends ConsumerState<Nuevopostview> {
       context.go('/home/0');
 
       // Limpiar los campos
+      setState(() {
+        _tituloController.clear();
+        _descripcionController.clear();
+        _imagenSeleccionada = null;
+        _imagenWebBytes = null;
+        _categoriaController.clear();
+        _tags.clear();
+      });
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _actualizar() async {
+    // Validación
+    if (_tituloController.text.isEmpty ||
+        _descripcionController.text.isEmpty ||
+        (_imagenSeleccionada == null &&
+            _imagenWebBytes == null &&
+            _imagenUrlExistente == null) ||
+        _categoriaController.text.isEmpty ||
+        _tags.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor completa todos los campos'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Mostrar loading
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      String imageUrl;
+
+      // Si hay imagen nueva, subirla; si no, usar la existente
+      if (_imagenSeleccionada != null || _imagenWebBytes != null) {
+        Uint8List imageBytes;
+        if (kIsWeb && _imagenWebBytes != null) {
+          imageBytes = _imagenWebBytes!;
+        } else if (_imagenSeleccionada != null) {
+          imageBytes = await _imagenSeleccionada!.readAsBytes();
+        } else {
+          throw Exception('No hay imagen seleccionada');
+        }
+        imageUrl = await CloudinaryHelper.fileUpload(imageBytes);
+      } else {
+        imageUrl = _imagenUrlExistente!;
+      }
+
+      // Crear post actualizado
+      final postActualizado = Post(
+        uid: widget.postId!,
+        titulo: _tituloController.text,
+        descripcion: _descripcionController.text,
+        imagen: imageUrl,
+        categoria: _categoriaController.text,
+        tags: _tags,
+        usuario: ref.read(authProvider).user!,
+        createdAt:
+            '', // Aquí podrías mantener la fecha original si la necesitas
+      );
+
+      // Actualizar en el provider
+      await ref.read(postsProvider.notifier).actualizarPost(postActualizado);
+
+      // Cerrar loading
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Mostrar éxito
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Post actualizado exitosamente'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      // Regresar al home
+      if (!mounted) return;
+      context.go('/home/0');
+
+      // Limpiar campos
       setState(() {
         _tituloController.clear();
         _descripcionController.clear();
@@ -543,7 +637,7 @@ class _NuevaPublicacionScreenState extends ConsumerState<Nuevopostview> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _publicar,
+                onPressed: widget.postId == null ? _publicar : _actualizar,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: color,
                   foregroundColor: Colors.white,

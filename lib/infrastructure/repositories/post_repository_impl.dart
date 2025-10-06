@@ -26,4 +26,9 @@ class PostRepositoryImpl extends PostRepository {
   Future<void> createPost(String token, Post post) {
     return datasource.createPost(token, post);
   }
+
+  @override
+  Future<void> updatePost(String token, Post post) {
+    return datasource.updatePost(token, post);
+  }
 }
