@@ -10,8 +10,11 @@ class HomeView extends ConsumerWidget {
     final usersState = ref.watch(usersSliderProvider).users;
     final color = Theme.of(context).colorScheme.primary;
     final postsState = ref.watch(postsProvider);
+    final comentsState = ref.watch(comentariosProvider);
 
-    if (usersState.isEmpty || postsState.isLoading == true) {
+    if (usersState.isEmpty ||
+        postsState.isLoading == true ||
+        comentsState.isLoading == true) {
       return const Center(child: CircularProgressIndicator());
     }
 

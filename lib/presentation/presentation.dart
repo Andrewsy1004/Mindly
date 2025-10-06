@@ -37,3 +37,4 @@ export './providers/theme/theme_provider.dart';
 export './providers/auth/auth_provider.dart';
 export './providers/shared/slider_provider.dart';
 export 'providers/shared/post_providet.dart';
+export 'providers/shared/coment_provider.dart';

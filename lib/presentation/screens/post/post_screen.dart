@@ -2,18 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:mindly/domain/domain.dart';
 import 'package:mindly/presentation/presentation.dart';
 
-class PostScreen extends ConsumerWidget {
+class PostScreen extends ConsumerStatefulWidget {
   static const name = 'post-screen';
   final String id;
   const PostScreen({super.key, required this.id});
 
+  @override
+  ConsumerState<PostScreen> createState() => _PostScreenState();
+}
+
+class _PostScreenState extends ConsumerState<PostScreen> {
+  final TextEditingController _comentarioController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Cargar comentarios al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(comentariosProvider.notifier).cargarComentarios();
+    });
+  }
+
+  @override
+  void dispose() {
+    _comentarioController.dispose();
+    super.dispose();
+  }
+
   Future<void> deletePostById(WidgetRef ref, BuildContext context) async {
     try {
-      await ref.read(postsProvider.notifier).eliminarPost(id);
+      await ref.read(postsProvider.notifier).eliminarPost(widget.id);
 
-      // Verificar  si el widget todavía está en el árbol de widgets antes de usar
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -33,14 +55,75 @@ class PostScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _crearComentario() async {
+    if (_comentarioController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Escribe un comentario'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final authState = ref.read(authProvider).user!;
+
+      await ref
+          .read(comentariosProvider.notifier)
+          .crearComentario(widget.id, _comentarioController.text.trim());
+
+      _comentarioController.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comentario agregado'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _eliminarComentario(String comentarioId) async {
+    try {
+      await ref
+          .read(comentariosProvider.notifier)
+          .eliminarComentario(comentarioId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comentario eliminado'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final postsState = ref.watch(postsProvider);
+    final comentariosState = ref.watch(comentariosProvider);
     final recommendedPosts = postsState.allPosts;
     final authState = ref.read(authProvider).user;
 
     // Buscar el post en la lista
-    final post = recommendedPosts.where((p) => p.uid == id).firstOrNull;
+    final post = recommendedPosts.where((p) => p.uid == widget.id).firstOrNull;
 
     // Si el post no existe, redirigir automáticamente
     if (post == null) {
@@ -49,13 +132,16 @@ class PostScreen extends ConsumerWidget {
           context.pop();
         }
       });
-
-      // Mostrar loading mientras redirige
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     // Verificar si el post pertenece al usuario
     final isOwner = post.usuario.uid == authState!.uid;
+
+    // Filtrar comentarios del post actual
+    final comentariosDelPost = comentariosState.comentarios
+        .where((c) => c.post.uid == widget.id)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -82,7 +168,6 @@ class PostScreen extends ConsumerWidget {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -92,7 +177,6 @@ class PostScreen extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Título
                 Text(
                   post.titulo,
                   style: const TextStyle(
@@ -100,10 +184,7 @@ class PostScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
-                // Autor + Fecha en la misma fila
                 Row(
                   children: [
                     GestureDetector(
@@ -121,7 +202,7 @@ class PostScreen extends ConsumerWidget {
                           Text(
                             post.usuario.nombre,
                             style: const TextStyle(
-                              fontSize: 14, // un poco más grande
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -137,12 +218,9 @@ class PostScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 10),
               ],
             ),
-
-            // const SizedBox(height: 12),
 
             // Chips
             Wrap(
@@ -194,60 +272,11 @@ class PostScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            // Texto del post
-            const Text(
-              "La vida sostenible ya no es un concepto de nicho, "
-              "sino un movimiento creciente que está remodelando cómo interactuamos con nuestro planeta. "
-              "Desde hogares ecológicos hasta consumo consciente, el futuro de la vida sostenible se trata de "
-              "crear un equilibrio armonioso entre las necesidades humanas y la preservación del medio ambiente...",
-              style: TextStyle(fontSize: 14, height: 1.5),
+            // Descripción del post
+            Text(
+              post.descripcion,
+              style: const TextStyle(fontSize: 14, height: 1.5),
             ),
-            // const SizedBox(height: 16),
-
-            // Likes y comentarios
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            //   children: [
-            //     // Likes
-            //     Row(
-            //       mainAxisSize: MainAxisSize.min,
-            //       children: [
-            //         Icon(
-            //           Icons.favorite_border,
-            //           size: 20,
-            //           color: Colors.grey[600],
-            //         ),
-            //         const SizedBox(width: 4),
-            //         Text(
-            //           "123",
-            //           style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            //         ),
-            //       ],
-            //     ),
-
-            //     // Comments
-            //     Row(
-            //       mainAxisSize: MainAxisSize.min,
-            //       children: [
-            //         Icon(
-            //           Icons.chat_bubble_outline,
-            //           size: 20,
-            //           color: Colors.grey[600],
-            //         ),
-            //         const SizedBox(width: 4),
-            //         Text(
-            //           "45",
-            //           style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            //         ),
-            //       ],
-            //     ),
-
-            //     // Share
-            //     Icon(Icons.redo, size: 20, color: Colors.grey[600]),
-            //   ],
-            // ),
-
-            // const Divider(height: 32),
             const SizedBox(height: 32),
 
             // Sección de comentarios
@@ -257,33 +286,38 @@ class PostScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            _Comment(
-              name: "Ethan Carter",
-              time: "Hace 2 días",
-              text:
-                  "Excelente artículo. Estoy particularmente interesado en las nuevas energías renovables mencionadas.",
-            ),
-            _Comment(
-              name: "Sofía Bernart",
-              time: "Hace 1 día",
-              text:
-                  "¡Gracias Ethan! Sí, creo que los desarrollos más recientes en energía solar son muy prometedores.",
-            ),
+            // Lista de comentarios
+            if (comentariosState.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (comentariosDelPost.isEmpty)
+              const Text(
+                'No hay comentarios aún. ¡Sé el primero en comentar!',
+                style: TextStyle(color: Colors.grey),
+              )
+            else
+              ...comentariosDelPost.map((comentario) {
+                final isComentarioOwner =
+                    comentario.usuario.uid == authState.uid;
+                return _Comment(
+                  comentario: comentario,
+                  isOwner: isComentarioOwner,
+                  onDelete: () => _eliminarComentario(comentario.uid),
+                );
+              }).toList(),
 
             const SizedBox(height: 12),
 
             // Caja de nuevo comentario
             Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 18,
-                  backgroundImage: NetworkImage(
-                    "https://i.pravatar.cc/150?img=47",
-                  ),
+                  backgroundImage: NetworkImage(authState.fotoPerfil),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
+                    controller: _comentarioController,
                     decoration: InputDecoration(
                       hintText: "Añadir un comentario...",
                       filled: true,
@@ -296,7 +330,12 @@ class PostScreen extends ConsumerWidget {
                         vertical: 8,
                         horizontal: 16,
                       ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.send),
+                        onPressed: _crearComentario,
+                      ),
                     ),
+                    onSubmitted: (_) => _crearComentario(),
                   ),
                 ),
               ],
@@ -310,11 +349,15 @@ class PostScreen extends ConsumerWidget {
 
 // Widget para comentario
 class _Comment extends StatelessWidget {
-  final String name;
-  final String time;
-  final String text;
+  final Comentario comentario;
+  final bool isOwner;
+  final VoidCallback onDelete;
 
-  const _Comment({required this.name, required this.time, required this.text});
+  const _Comment({
+    required this.comentario,
+    required this.isOwner,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -324,9 +367,9 @@ class _Comment extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 18,
-            backgroundImage: NetworkImage("https://i.pravatar.cc/150?img=3"),
+            backgroundImage: NetworkImage(comentario.usuario.fotoPerfil),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -337,27 +380,52 @@ class _Comment extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        "$name · $time",
+                        "${comentario.usuario.nombre} · ${_formatearFecha(comentario.createdAt)}",
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: Colors.red[400],
-                    ),
+                    if (isOwner)
+                      GestureDetector(
+                        onTap: onDelete,
+                        child: Icon(
+                          Icons.delete_outline,
+                          size: 18,
+                          color: Colors.red[400],
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(text, style: const TextStyle(fontSize: 13)),
+                Text(
+                  comentario.contenido,
+                  style: const TextStyle(fontSize: 13),
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatearFecha(String fecha) {
+    final now = DateTime.now();
+    final dateTime = DateTime.parse(fecha);
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 7) {
+      return DateFormat('dd/MM/yyyy').format(dateTime);
+    } else if (difference.inDays > 0) {
+      return 'Hace ${difference.inDays} día${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Hace ${difference.inHours} hora${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Hace ${difference.inMinutes} minuto${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'Hace un momento';
+    }
   }
 }
