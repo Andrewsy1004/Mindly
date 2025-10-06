@@ -93,6 +93,24 @@ class PostsNotifier extends StateNotifier<PostsState> {
       state = state.copyWith(errorMessage: e.toString(), isLoading: false);
     }
   }
+
+  // Agregar Post
+  Future<void> agregarPost(Post post) async {
+    final token = await keyValueStorageService.getToken();
+    try {
+      state = state.copyWith(isLoading: true);
+      await postsRepository.createPost(token!, post);
+      state = state.copyWith(isLoading: false, errorMessage: '');
+
+      // Agregar post a la lista de posts
+      state = state.copyWith(allPosts: [...state.allPosts, post]);
+
+      //Cargar Todos los posts
+      loadData();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString(), isLoading: false);
+    }
+  }
 }
 
 /// State

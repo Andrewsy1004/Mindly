@@ -1,17 +1,26 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-class Nuevopostview extends StatefulWidget {
+import 'package:mindly/config/config.dart';
+import 'package:mindly/domain/domain.dart';
+import 'package:mindly/presentation/presentation.dart';
+
+class Nuevopostview extends ConsumerStatefulWidget {
   static const name = 'nueva-publicacion';
 
-  const Nuevopostview({super.key});
+  final String? postId;
+
+  const Nuevopostview({super.key, this.postId});
 
   @override
-  State<Nuevopostview> createState() => _NuevaPublicacionScreenState();
+  ConsumerState<Nuevopostview> createState() => _NuevaPublicacionScreenState();
 }
 
-class _NuevaPublicacionScreenState extends State<Nuevopostview> {
+class _NuevaPublicacionScreenState extends ConsumerState<Nuevopostview> {
   final TextEditingController _tituloController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _categoriaController = TextEditingController();
@@ -19,7 +28,17 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
   final TextEditingController _tagController = TextEditingController();
 
   File? _imagenSeleccionada;
+  Uint8List? _imagenWebBytes;
   final ImagePicker _picker = ImagePicker();
+  String? _imagenUrlExistente;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.postId != null) {
+      _cargarDatosPost();
+    }
+  }
 
   @override
   void dispose() {
@@ -28,6 +47,18 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
     _categoriaController.dispose();
     _tagController.dispose();
     super.dispose();
+  }
+
+  void _cargarDatosPost() {
+    final postsState = ref.read(postsProvider);
+    final post = postsState.allPosts.firstWhere((p) => p.uid == widget.postId);
+
+    _tituloController.text = post.titulo;
+    _descripcionController.text = post.descripcion;
+    _categoriaController.text = post.categoria;
+    _tags.addAll(post.tags);
+    _imagenUrlExistente = post.imagen;
+    setState(() {});
   }
 
   void _agregarTag() {
@@ -74,24 +105,25 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildImageSourceButton(
-                    icon: Icons.camera_alt,
-                    label: 'Cámara',
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final XFile? image = await _picker.pickImage(
-                        source: ImageSource.camera,
-                        maxWidth: 1920,
-                        maxHeight: 1080,
-                        imageQuality: 85,
-                      );
-                      if (image != null) {
-                        setState(() {
-                          _imagenSeleccionada = File(image.path);
-                        });
-                      }
-                    },
-                  ),
+                  if (!kIsWeb)
+                    _buildImageSourceButton(
+                      icon: Icons.camera_alt,
+                      label: 'Cámara',
+                      onTap: () async {
+                        Navigator.pop(context);
+                        final XFile? image = await _picker.pickImage(
+                          source: ImageSource.camera,
+                          maxWidth: 1920,
+                          maxHeight: 1080,
+                          imageQuality: 85,
+                        );
+                        if (image != null) {
+                          setState(() {
+                            _imagenSeleccionada = File(image.path);
+                          });
+                        }
+                      },
+                    ),
                   _buildImageSourceButton(
                     icon: Icons.photo_library,
                     label: 'Galería',
@@ -104,9 +136,16 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
                         imageQuality: 85,
                       );
                       if (image != null) {
-                        setState(() {
-                          _imagenSeleccionada = File(image.path);
-                        });
+                        if (kIsWeb) {
+                          final bytes = await image.readAsBytes();
+                          setState(() {
+                            _imagenWebBytes = bytes;
+                          });
+                        } else {
+                          setState(() {
+                            _imagenSeleccionada = File(image.path);
+                          });
+                        }
                       }
                     },
                   ),
@@ -145,15 +184,15 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
     );
   }
 
-  void _publicar() {
-    // Validación básica
+  void _publicar() async {
     if (_tituloController.text.isEmpty ||
         _descripcionController.text.isEmpty ||
-        _imagenSeleccionada == null ||
+        (_imagenSeleccionada == null && _imagenWebBytes == null) ||
         _categoriaController.text.isEmpty ||
         _tags.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Por favor completa todos los campos'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
@@ -162,40 +201,104 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
       return;
     }
 
-    // Crear el objeto con los datos del post
-    final postData = {
-      "titulo": _tituloController.text,
-      "descripcion": _descripcionController.text,
-      "imagen": _imagenSeleccionada!.path, // Path local de la imagen
-      "categoria": _categoriaController.text,
-      "tags": _tags,
-    };
-
-    print('Datos del post: $postData');
-
-    // TODO: Aquí subirías la imagen a Cloudinary primero
-
-    // TODO: Luego harías el POST a tu API
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Publicación creada exitosamente'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    Navigator.of(context).pop();
+    try {
+      // Obtener bytes de la imagen
+      Uint8List imageBytes;
+      if (kIsWeb && _imagenWebBytes != null) {
+        imageBytes = _imagenWebBytes!;
+      } else if (_imagenSeleccionada != null) {
+        imageBytes = await _imagenSeleccionada!.readAsBytes();
+      } else {
+        throw Exception('No hay imagen seleccionada');
+      }
+
+      // ubir imagen a Cloudinary
+      final imageUrl = await CloudinaryHelper.fileUpload(imageBytes);
+
+      final post = Post(
+        uid: '',
+        titulo: _tituloController.text,
+        descripcion: _descripcionController.text,
+        imagen: imageUrl,
+        categoria: _categoriaController.text,
+        tags: _tags,
+        usuario: User(
+          nombre: '',
+          correo: '',
+          roles: [],
+          profesion: '',
+          biografia: '',
+          fotoPerfil: '',
+          uid: '',
+          token: '',
+        ),
+        createdAt: '',
+      );
+
+      // Llamar al provider para agregar el post
+      await ref.read(postsProvider.notifier).agregarPost(post);
+
+      // Cerrar el diálogo de carga (verificar que el widget sigue montado)
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Mostrar mensaje de éxito
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Publicación creada exitosamente'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+
+      if (!mounted) return;
+      context.go('/home/0');
+
+      // Limpiar los campos
+      setState(() {
+        _tituloController.clear();
+        _descripcionController.clear();
+        _imagenSeleccionada = null;
+        _imagenWebBytes = null;
+        _categoriaController.clear();
+        _tags.clear();
+      });
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
+    final bool tieneImagen =
+        _imagenSeleccionada != null ||
+        _imagenWebBytes != null ||
+        _imagenUrlExistente != null;
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text('Nueva publicación'),
+        title: Text(
+          widget.postId == null ? 'Nueva publicación' : 'Editar publicación',
+        ),
         centerTitle: true,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -205,7 +308,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Campo Título
             _buildLabel('Título'),
             SizedBox(height: 8),
             TextField(
@@ -231,7 +333,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 20),
 
-            // Campo Descripción
             _buildLabel('Descripción'),
             SizedBox(height: 8),
             TextField(
@@ -258,7 +359,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 20),
 
-            // Imagen del dispositivo
             _buildLabel('Imagen'),
             SizedBox(height: 8),
             GestureDetector(
@@ -275,17 +375,31 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
                     style: BorderStyle.solid,
                   ),
                 ),
-                child: _imagenSeleccionada != null
+                child: tieneImagen
                     ? Stack(
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              _imagenSeleccionada!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                            child: _imagenWebBytes != null
+                                ? Image.memory(
+                                    _imagenWebBytes!,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : _imagenSeleccionada != null
+                                ? Image.file(
+                                    _imagenSeleccionada!,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.network(
+                                    _imagenUrlExistente!,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
                           Positioned(
                             top: 8,
@@ -294,6 +408,8 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
                               onTap: () {
                                 setState(() {
                                   _imagenSeleccionada = null;
+                                  _imagenWebBytes = null;
+                                  _imagenUrlExistente = null;
                                 });
                               },
                               child: Container(
@@ -344,7 +460,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 20),
 
-            // Categoría (campo de texto editable)
             _buildLabel('Categoría'),
             SizedBox(height: 8),
             TextField(
@@ -371,7 +486,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 20),
 
-            // Tags
             _buildLabel('Tags'),
             SizedBox(height: 8),
             Row(
@@ -409,7 +523,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 12),
 
-            // Lista de tags agregados
             if (_tags.isNotEmpty)
               Wrap(
                 spacing: 8,
@@ -427,7 +540,6 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
 
             SizedBox(height: 40),
 
-            // Botón Publicar
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -442,7 +554,7 @@ class _NuevaPublicacionScreenState extends State<Nuevopostview> {
                   elevation: 2,
                 ),
                 child: Text(
-                  'Publicar',
+                  widget.postId == null ? 'Publicar' : 'Actualizar',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),

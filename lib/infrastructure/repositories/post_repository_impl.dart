@@ -21,4 +21,9 @@ class PostRepositoryImpl extends PostRepository {
   Future<void> deletePost(String token, String postId) {
     return datasource.deletePost(token, postId);
   }
+
+  @override
+  Future<void> createPost(String token, Post post) {
+    return datasource.createPost(token, post);
+  }
 }

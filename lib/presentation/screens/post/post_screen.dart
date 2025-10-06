@@ -168,7 +168,8 @@ class PostScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () =>
+                        context.push('/actualizar-post/${post.uid}'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF0D80F2),
                     ),

@@ -82,6 +82,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return PostScreen(id: id);
         },
       ),
+
+      // Actualizar Post
+      GoRoute(
+        path: '/actualizar-post/:postId',
+        builder: (context, state) =>
+            Nuevopostview(postId: state.pathParameters['postId']),
+      ),
     ],
   );
 });

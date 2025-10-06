@@ -58,4 +58,25 @@ class PostDatasourceImpl extends PostDatasource {
       throw Exception('Error al eliminar post: $e');
     }
   }
+
+  @override
+  Future<void> createPost(String token, Post post) async {
+    try {
+      final response = await dio.post(
+        '/posts/crear-post',
+        data: {
+          'titulo': post.titulo,
+          'descripcion': post.descripcion,
+          'imagen': post.imagen,
+          'categoria': post.categoria,
+          'tags': post.tags,
+        },
+        options: Options(headers: {'jsonwebtoken': token}),
+      );
+
+      return response.data;
+    } catch (e) {
+      throw Exception('Error al crear post: $e');
+    }
+  }
 }
